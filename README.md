@@ -29,6 +29,7 @@
 
 
 作为 mapcidr和httpx的中转，主动探测C段及title
+
 `mapcidr  -cidr 203.218.154.232/24 |tourl -p 21,22,23  -P   -q |httpx  -sc -title`
 
 <img width="726" alt="Snipaste_2022-05-06_19-22-18" src="https://user-images.githubusercontent.com/48342077/167122987-08da4fae-6bf6-4849-ab69-6584b51abbbf.png">
