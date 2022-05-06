@@ -165,6 +165,12 @@ func GetAsignPorts(ports string) (intTempPorts []int, err error) {
 	// 切割"," "-"
 	tempPorts = strings.Split(ports, ",")
 	for _, value := range tempPorts {
+		if value == "0" {
+			err = errors.New("0不与其他端口同时指定，请检查")
+			return
+		}
+	}
+	for _, value := range tempPorts {
 		if strings.Contains(value, "-") {
 			dashPorts = append(dashPorts, value)
 		} else {
@@ -312,6 +318,7 @@ func main() {
 
 	keep_port := flag.String("p", "", "指定port")
 	is_common_web_port := flag.Bool("P", false, "在常见WEB端口组的基础上指定port，可单独使用")
+	is_major_big_web_port_list := flag.Bool("PP", false, "大容量WEB端口")
 	to_http := flag.Bool("th", false, "转换为HTTP")
 	to_https := flag.Bool("ts", false, "转换为HTTPS")
 	path := flag.String("path", "/", "URI路径")
@@ -321,7 +328,13 @@ func main() {
 	flag.Parse()
 	args := os.Args[1:]
 
-	var common_port_list = []int{80, 443, 2181, 3443, 5601, 7001, 8000, 8080, 8161, 8443, 9000, 9200, 9300, 11211}
+	var common_port_list = []int{81, 3443, 5601, 7001, 8000, 8001, 8080, 8081, 8088, 8090, 8161, 8443, 8888, 9000, 9200, 9999}
+	var major_big_web_port_list = []int{81, 82, 88, 1443, 3443, 5601, 7001, 8000, 8001, 8080, 8081, 8088, 8090, 8161, 8181, 8443, 8888, 8899, 9000, 9090, 9200, 9999}
+
+	// 启用big超级WEB端口组
+	if *is_major_big_web_port_list {
+		common_port_list = major_big_web_port_list
+	}
 
 	urls, err := ReadLine(*url_file_path)
 	if err != nil {
@@ -436,6 +449,18 @@ func main() {
 		}
 	}
 
+	if *path != "/" {
+		if !strings.HasPrefix(*path, "/") {
+			*path = "/" + *path
+		}
+		var tempSlice []string
+		for _, value := range misc {
+			temp := value + *path
+			tempSlice = append(tempSlice, temp)
+		}
+		misc = tempSlice
+	}
+
 	// to http
 
 	if *to_http {
@@ -454,39 +479,54 @@ func main() {
 		misc = tempSlice
 	}
 
-	if *path != "/" {
-		if !strings.HasPrefix(*path, "/") {
-			*path = "/" + *path
-		}
-		var tempSlice []string
-		for _, value := range misc {
-			temp := value + *path
-			tempSlice = append(tempSlice, temp)
-		}
-		misc = tempSlice
-	}
-
 	var for_http_list []string
 	origin_ips := UrlToIpsNoPort(urls)
-	if *to_http && *keep_port != "0" {
+	if *to_http && *keep_port != "0" && *is_common_web_port {
 		var temp []string
 		for _, value := range origin_ips {
-			tempStr := "http://" + value
+			var tempStr string
+			if *path == "/" {
+				tempStr = "http://" + value
+			} else {
+				tempStr = "http://" + value + *path
+			}
+
 			temp = append(temp, tempStr)
 		}
 		for_http_list = append(for_http_list, temp...)
 		for_http_list = append(for_http_list, misc...)
 		misc = for_http_list
-	} else if *to_https && *keep_port != "0" {
+	} else if *to_https && *keep_port != "0" && *is_common_web_port {
 		var temp []string
 		for _, value := range origin_ips {
-			tempStr := "https://" + value
+			var tempStr string
+			if *path == "/" {
+				tempStr = "https://" + value
+			} else {
+				tempStr = "https://" + value + *path
+			}
 			temp = append(temp, tempStr)
 		}
 		for_http_list = append(for_http_list, temp...)
 		for_http_list = append(for_http_list, misc...)
 		misc = for_http_list
 		// fmt.Println("初始附加完毕")
+	}
+
+	// 不生成http或https时，指定P的情况下，附上去除port的原始结果
+	for_http_list = []string{}
+	if *path == "/" {
+		for_http_list = append(for_http_list, origin_ips...)
+	} else {
+		for _, value := range origin_ips {
+			for_http_list = append(for_http_list, value+*path)
+		}
+	}
+
+	if !*to_http && !*to_https && *is_common_web_port {
+
+		for_http_list = append(for_http_list, misc...)
+		misc = for_http_list
 	}
 
 	if !*quiet_mod {

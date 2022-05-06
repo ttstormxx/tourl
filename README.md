@@ -37,6 +37,8 @@
 # 参数
   -P    在常见WEB端口组的基础上指定port，可单独使用
   
+  -PP   大容量WEB端口
+  
   -l string        url文件路径 (default "ips.txt")
         
   -o string        输出到指定文件 (default "result.txt")
