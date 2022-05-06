@@ -2,12 +2,13 @@
 批量处理 URL/IP/DOMAIN 为 指定形式的URL或IP:PORT形式，懒癌患者福音
 
 # 用法
-cat ips.txt|tourl
+`cat ips.txt|tourl`
 
 <img width="374" alt="Snipaste_2022-05-06_19-04-52" src="https://user-images.githubusercontent.com/48342077/167122853-1dafd370-fac8-41b9-9b0e-e5b882092bc8.png">
 
 
 对指定ip文件处理，移除port
+
 `cat ips.txt|tourl    -p 0`
 
 <img width="499" alt="Snipaste_2022-05-06_19-15-05" src="https://user-images.githubusercontent.com/48342077/167122888-5658d774-065c-4a4e-8d13-f6d8d31214c7.png">
