@@ -321,7 +321,7 @@ func main() {
 	flag.Parse()
 	args := os.Args[1:]
 
-	var common_port_list = []int{2181, 3443, 5601, 7001, 8000, 8080, 8161, 8443, 9000, 9200, 9300, 11211}
+	var common_port_list = []int{80, 443, 2181, 3443, 5601, 7001, 8000, 8080, 8161, 8443, 9000, 9200, 9300, 11211}
 
 	urls, err := ReadLine(*url_file_path)
 	if err != nil {
@@ -360,6 +360,15 @@ func main() {
 	} else if Pnop {
 		misc = UrlToIpsWithPort(urls)
 		ports := common_port_list
+		if *to_http || *to_https {
+			var temp []int
+			for _, value := range ports {
+				if value != 80 && value != 443 {
+					temp = append(temp, value)
+				}
+			}
+			ports = temp
+		}
 		if !*quiet_mod {
 			fmt.Println("扩展PORT列表为：")
 			fmt.Println(ports)
@@ -397,6 +406,16 @@ func main() {
 				ports = uniqueArr(ports)
 				// 升序
 				ports = ascArr(ports)
+
+			}
+			if *to_http || *to_https {
+				var temp []int
+				for _, value := range ports {
+					if value != 80 && value != 443 {
+						temp = append(temp, value)
+					}
+				}
+				ports = temp
 			}
 
 			if !*quiet_mod {
@@ -445,6 +464,29 @@ func main() {
 			tempSlice = append(tempSlice, temp)
 		}
 		misc = tempSlice
+	}
+
+	var for_http_list []string
+	origin_ips := UrlToIpsNoPort(urls)
+	if *to_http && *keep_port != "0" {
+		var temp []string
+		for _, value := range origin_ips {
+			tempStr := "http://" + value
+			temp = append(temp, tempStr)
+		}
+		for_http_list = append(for_http_list, temp...)
+		for_http_list = append(for_http_list, misc...)
+		misc = for_http_list
+	} else if *to_https && *keep_port != "0" {
+		var temp []string
+		for _, value := range origin_ips {
+			tempStr := "https://" + value
+			temp = append(temp, tempStr)
+		}
+		for_http_list = append(for_http_list, temp...)
+		for_http_list = append(for_http_list, misc...)
+		misc = for_http_list
+		// fmt.Println("初始附加完毕")
 	}
 
 	if !*quiet_mod {
