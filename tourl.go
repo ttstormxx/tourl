@@ -334,8 +334,12 @@ func main() {
 	// 启用big超级WEB端口组
 	if *is_major_big_web_port_list {
 		common_port_list = major_big_web_port_list
+		*is_common_web_port = true
 	}
-
+	fmt.Println("P是启动的吗：", *is_common_web_port)
+	fmt.Println("PP是启动的吗：", *is_major_big_web_port_list)
+	fmt.Println("目前附加的端口组是： 总计：", len(common_port_list))
+	fmt.Println(common_port_list)
 	urls, err := ReadLine(*url_file_path)
 	if err != nil {
 		fmt.Println(err)
@@ -347,7 +351,8 @@ func main() {
 
 	exp_p := `^-p$`
 	reg_p, _ := regexp2.Compile(exp_p, 0)
-	exp_P := `^-P$`
+	// exp_P := `^-P$`
+	exp_P := `^(-P|-PP)$`
 	reg_P, _ := regexp2.Compile(exp_P, 0)
 	for _, value := range args {
 		if ismatch_p, _ := reg_p.MatchString(value); ismatch_p {
