@@ -336,10 +336,7 @@ func main() {
 		common_port_list = major_big_web_port_list
 		*is_common_web_port = true
 	}
-	fmt.Println("P是启动的吗：", *is_common_web_port)
-	fmt.Println("PP是启动的吗：", *is_major_big_web_port_list)
-	fmt.Println("目前附加的端口组是： 总计：", len(common_port_list))
-	fmt.Println(common_port_list)
+
 	urls, err := ReadLine(*url_file_path)
 	if err != nil {
 		fmt.Println(err)
@@ -367,7 +364,9 @@ func main() {
 	}
 
 	if !*quiet_mod {
-		if Pnop {
+		if Pnop && *is_major_big_web_port_list {
+			fmt.Println("无指定端口，启用大容量WEB端口组")
+		} else if Pnop {
 			fmt.Println("无指定端口，仅启用默认端口组")
 		}
 	}
@@ -416,7 +415,12 @@ func main() {
 
 			if *is_common_web_port {
 				if !*quiet_mod {
-					fmt.Println("指定端口，同时启用常见WEB端口组。。。")
+					if *is_major_big_web_port_list {
+						fmt.Println("指定端口，同时启用大容量WEB端口组。。。")
+					} else {
+						fmt.Println("指定端口，同时启用常见WEB端口组。。。")
+					}
+
 				}
 
 				ports = append(ports, common_port_list...)
