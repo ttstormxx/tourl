@@ -78,11 +78,76 @@ func ReadLine(filename string) ([]string, error) {
 
 		}
 	}
+	// fmt.Println("readline done:",temp)
 	result = temp
 	return result, nil
 }
 
-func UrlToIpsWithPort(urls []string) []string {
+func IsIpOrDomainValid(ips []string) (valid bool, err error) {
+	// 必须有 .
+	// 域名 至少有一个 .
+	// . 不可以出现在 开头或结尾
+	// 不可以有 ..
+	// IP必须有 分隔的 3 个 .
+
+	// 上面过滤完成后，对漏网之鱼进行过滤
+	// 域名中只能出现 -， 不可出现其他非法字符 空格以及其！、%、&等非法字符
+	// - 连接符不能连续出现  --
+
+	expr_ip := `\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}`
+	reg_ip, _ := regexp2.Compile(expr_ip, 0)
+
+	expr_false_num := `\d{1,3}\.\d{1,3}`
+	reg_false_num, _ := regexp2.Compile(expr_false_num, 0)
+
+	expr_special_chars := `[\\\^\$\|\?\*\+\[\]\{\}\(\)!@#%&/<>~]`
+	reg_special, _ := regexp2.Compile(expr_special_chars, 0)
+
+	for _, value := range ips {
+
+		if strings.HasPrefix(value, "-") || strings.HasSuffix(value, "-") {
+			err = errors.New("不是正确的域名/IP/URL，请检查")
+			// fmt.Println("pre-suffix- i catched it")
+			break
+		}
+		if strings.Contains(value, "--") {
+			err = errors.New("不是正确的域名/IP/URL，请检查")
+			// fmt.Println("-- i catched it")
+			break
+		}
+
+		if isMatch, _ := reg_special.MatchString(value); isMatch {
+			err = errors.New("不是正确的域名/IP/URL，请检查")
+			// fmt.Println("reg_special i catched it")
+			break
+		}
+		if !strings.Contains(value, ".") || strings.Contains(value, "..") {
+			err = errors.New("不是正确的域名/IP/URL，请检查")
+			// fmt.Println(". .. i catched it")
+			break
+		}
+		if strings.HasPrefix(value, ".") || strings.HasSuffix(value, ".") {
+			err = errors.New("不是正确的域名/IP/URL，请检查")
+			// fmt.Println("pre-suffix . i catched it")
+			break
+		}
+		if isMatch, _ := reg_ip.MatchString(value); isMatch {
+			if strings.Count(value, ".") != 3 {
+				err = errors.New("不是正确的域名/IP/URL，请检查")
+				// fmt.Println("not ip i catched it")
+				break
+			}
+		} else if isMatch_false_num, _ := reg_false_num.MatchString(value); isMatch_false_num {
+			err = errors.New("不是正确的域名/IP/URL，请检查")
+			// fmt.Println("not ip_little  i catched it")
+			break
+		}
+
+	}
+	return valid, err
+}
+
+func UrlToIpsWithPort(urls []string) ([]string, error) {
 	// 处理URL为IP:PORT列表
 	// 正则表达式稍有问题
 	// URL后面如果没有/则无法匹配
@@ -117,10 +182,15 @@ func UrlToIpsWithPort(urls []string) []string {
 		temp = append(temp, ipPort)
 
 	}
-	return temp
+	_, err := IsIpOrDomainValid(temp)
+	if err != nil {
+		// fmt.Println(err)
+		return nil, err
+	}
+	return temp, err
 }
 
-func UrlToIpsNoPort(urls []string) []string {
+func UrlToIpsNoPort(urls []string) ([]string, error) {
 	// 处理URL为IP:PORT列表
 	// 正则表达式稍有问题
 	// URL后面如果没有/则无法匹配
@@ -155,7 +225,12 @@ func UrlToIpsNoPort(urls []string) []string {
 		temp = append(temp, ipPort)
 
 	}
-	return temp
+	_, err := IsIpOrDomainValid(temp)
+	if err != nil {
+		// fmt.Println(err)
+		return nil, err
+	}
+	return temp, err
 }
 
 func GetAsignPorts(ports string) (intTempPorts []int, err error) {
@@ -340,6 +415,8 @@ func main() {
 	urls, err := ReadLine(*url_file_path)
 	if err != nil {
 		fmt.Println(err)
+		// fmt.Println("\n\n")
+		return
 	}
 
 	var hasp bool
@@ -372,10 +449,19 @@ func main() {
 	}
 
 	var misc []string
+	var err_ip error
 	if *keep_port == "" && !Pnop {
-		misc = UrlToIpsWithPort(urls)
+		misc, err_ip = UrlToIpsWithPort(urls)
+		if err_ip != nil {
+			fmt.Println(err_ip)
+			return
+		}
 	} else if Pnop {
-		misc = UrlToIpsWithPort(urls)
+		misc, err_ip = UrlToIpsWithPort(urls)
+		if err_ip != nil {
+			fmt.Println(err_ip)
+			return
+		}
 		ports := common_port_list
 		if *to_http || *to_https {
 			var temp []int
@@ -404,9 +490,17 @@ func main() {
 
 		// p 0  去除端口
 		if *keep_port == "0" {
-			misc = UrlToIpsNoPort(urls)
+			misc, err_ip = UrlToIpsNoPort(urls)
+			if err_ip != nil {
+				fmt.Println(err_ip)
+				return
+			}
 		} else {
-			misc = UrlToIpsNoPort(urls)
+			misc, err_ip = UrlToIpsNoPort(urls)
+			if err_ip != nil {
+				fmt.Println(err_ip)
+				return
+			}
 			// 以空格分割port组
 			ports, err := GetAsignPorts(*keep_port)
 			if err != nil {
@@ -489,7 +583,11 @@ func main() {
 	}
 
 	var for_http_list []string
-	origin_ips := UrlToIpsNoPort(urls)
+	origin_ips, err := UrlToIpsNoPort(urls)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 	if *to_http && *keep_port != "0" && *is_common_web_port {
 		var temp []string
 		for _, value := range origin_ips {
