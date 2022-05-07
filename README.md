@@ -35,7 +35,7 @@
 <img width="726" alt="Snipaste_2022-05-06_19-22-18" src="https://user-images.githubusercontent.com/48342077/167122987-08da4fae-6bf6-4849-ab69-6584b51abbbf.png">
 
 # 参数
-  -P    在常见WEB端口组的基础上指定port，可单独使用
+  -P    加载常见WEB端口，可单独使用
   
   -PP   大容量WEB端口，可单独使用
   
